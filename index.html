@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Chrono Rush: Galaxy Defense</title>
+    <style>
+        /* ... (Mantén los estilos anteriores, solo actualiza las clases de cartas) ... */
+        
+        .card-img-art {
+            width: 100%; height: 100px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 6px;
+        }
+
+        .tower-unit {
+            width: 50px; height: 50px;
+            background-size: cover;
+            border: 2px solid white;
+            position: absolute;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body>
+
+<script>
+    // Ahora cada carta tiene su propia URL de imagen única
+    const MASTER_CARDS = [
+        { id: 1, name: "Chrono Striker", rarity: "common", cost: 0, damage: 16, hp: 100, imageSrc: "url_de_tu_imagen_1.jpg", desc: "Ataque Veloz" },
+        { id: 2, name: "Nebula Shield", rarity: "common", cost: 0, damage: 3, hp: 350, imageSrc: "url_de_tu_imagen_2.jpg", desc: "Barrera de Gas" },
+        { id: 3, name: "Quantum Assassin", rarity: "rare", cost: 0, damage: 40, hp: 90, imageSrc: "url_de_tu_imagen_3.jpg", desc: "Golpe Critico" },
+        { id: 4, name: "Comet Dasher", rarity: "rare", cost: 0, damage: 30, hp: 120, imageSrc: "url_de_tu_imagen_4.jpg", desc: "Impacto Cometario" },
+        { id: 5, name: "Starburst Mage", rarity: "epic", cost: 0, damage: 50, hp: 130, imageSrc: "url_de_tu_imagen_5.jpg", desc: "Lluvia de Estrellas" },
+        { id: 6, name: "Gravity Singularity", rarity: "epic", cost: 0, damage: 15, hp: 280, imageSrc: "url_de_tu_imagen_6.jpg", desc: "Atracción Pesada" },
+        { id: 7, name: "Time Weaver", rarity: "epic", cost: 0, damage: 20, hp: 160, imageSrc: "url_de_tu_imagen_7.jpg", desc: "Bucle Temporal" },
+        { id: 8, name: "Galaxy Overlord", rarity: "legendary", cost: 0, damage: 90, hp: 210, imageSrc: "url_de_tu_imagen_8.jpg", desc: "Juicio Galáctico" },
+        { id: 9, name: "Eternal Phoenix", rarity: "legendary", cost: 0, damage: 70, hp: 190, imageSrc: "url_de_tu_imagen_9.jpg", desc: "Supernova" },
+        { id: 10, name: "Apex Predator", rarity: "legendary", cost: 0, damage: 85, hp: 240, imageSrc: "url_de_tu_imagen_10.jpg", desc: "Cacería Cósmica" }
+    ];
+
+    // Función para renderizar carta con imagen
+    function renderCollection() {
+        let container = document.getElementById('collection-container');
+        container.innerHTML = "";
+        MASTER_CARDS.forEach(card => {
+            container.innerHTML += `
+                <div class="card-item ${card.rarity}">
+                    <div class="card-img-art" style="background-image: url('${card.imageSrc}')"></div>
+                    <div class="card-title">${card.name}</div>
+                    <p>${card.desc}</p>
+                </div>
+            `;
+        });
+    }
+
+    // Al colocar en el campo de batalla:
+    function placeTower(x, y, card) {
+        let stage = document.getElementById('arena-stage');
+        let tower = document.createElement('div');
+        tower.className = "tower-unit";
+        tower.style.backgroundImage = `url('${card.imageSrc}')`;
+        tower.style.left = x + "px";
+        tower.style.top = y + "px";
+        stage.appendChild(tower);
+    }
+</script>
+</body>
+</html>
