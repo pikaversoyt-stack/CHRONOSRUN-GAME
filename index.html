@@ -2,68 +2,853 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Chrono Rush: Galaxy Defense</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrono Rush: Galaxy Defense - VERSO GAMES</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        /* ... (Mantén los estilos anteriores, solo actualiza las clases de cartas) ... */
-        
-        .card-img-art {
-            width: 100%; height: 100px;
-            background-size: cover;
-            background-position: center;
-            border-radius: 6px;
+        :root {
+            --bg-deep: #04040c;
+            --bg-card: #090916;
+            --neon-blue: #00f0ff;
+            --neon-pink: #ff007f;
+            --neon-purple: #9d00ff;
+            --text-main: #e2e8f0;
+            --gold-text: linear-gradient(45deg, #ffe066, #f5b041, #ffd700, #fff3b0);
         }
 
-        .tower-unit {
-            width: 50px; height: 50px;
-            background-size: cover;
-            border: 2px solid white;
-            position: absolute;
-            transform: translate(-50%, -50%);
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
         }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        h1, h2, h3, .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 1px;
+        }
+
+        .verso-active .gold-active {
+            background: var(--gold-text);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        
+        .verso-active .card-title-gold {
+            color: #ffd700 !important;
+            text-shadow: 0 0 8px #ffd700 !important;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at center, #0d0d1e 0%, #030308 100%);
+        }
+
+        /* PANTALLA DE CARGA */
+        #loading-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #020205;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .loader-bar {
+            width: 250px;
+            height: 6px;
+            background: #111;
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .loader-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, var(--neon-blue), var(--neon-purple));
+            box-shadow: 0 0 10px var(--neon-blue);
+            animation: loadProgress 2.2s ease-in-out forwards;
+        }
+
+        @keyframes loadProgress {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        /* HUD */
+        header {
+            background: rgba(9, 9, 22, 0.85);
+            border-bottom: 2px solid var(--neon-blue);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0; width: 100%; z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .brand h1 { font-size: 1.5rem; font-weight: 900; text-shadow: 0 0 10px var(--neon-blue); }
+        .verso-tag { font-size: 0.6rem; background: var(--neon-pink); padding: 2px 6px; border-radius: 4px; margin-left: 5px; vertical-align: middle;}
+        .stats-container { display: flex; gap: 20px; }
+        .stat-box { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(0, 240, 255, 0.3); padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-weight: bold; }
+
+        main { margin-top: 70px; margin-bottom: 70px; padding: 20px; height: calc(100vh - 140px); overflow-y: auto; }
+        .view-section { display: none; animation: fadeIn 0.3s ease forwards; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        nav { position: fixed; bottom: 0; width: 100%; background: rgba(9, 9, 22, 0.95); border-top: 2px solid var(--neon-purple); display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
+        .nav-btn { background: none; border: none; color: #8a8a9e; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 20%; }
+        .nav-btn.active, .nav-btn:hover { color: var(--neon-blue); text-shadow: 0 0 8px var(--neon-blue); }
+
+        /* LOBBY */
+        .lobby-grid { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; gap: 30px; margin-top: 40px; }
+        .title-large { font-size: 3rem; text-transform: uppercase; font-weight: 900; background: linear-gradient(to right, #fff, #8a8a9e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .btn-huge { background: linear-gradient(135deg, var(--neon-pink) 0%, var(--neon-purple) 100%); border: none; padding: 18px 50px; border-radius: 50px; color: white; font-size: 1.6rem; font-weight: bold; cursor: pointer; box-shadow: 0 0 25px var(--neon-pink); border: 2px solid rgba(255, 255, 255, 0.2); }
+        .code-input-zone { margin-top: 20px; display: flex; gap: 10px; }
+        .code-input-zone input { background: rgba(0,0,0,0.6); border: 1px solid var(--neon-purple); padding: 8px 15px; border-radius: 5px; color: white; text-align: center; }
+        .code-input-zone button { background: var(--neon-blue); border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+
+        /* COLECCIÓN */
+        .deck-info { background: rgba(255,255,255,0.02); border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center; border: 1px dashed rgba(250,250,250,0.1); }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .card-item { background: var(--bg-card); border: 2px solid #333; border-radius: 12px; padding: 15px; position: relative; display: flex; flex-direction: column; gap: 10px; overflow: hidden;}
+        
+        /* TEXTURAS INTERNAS CON ICONOS GRANDES */
+        .card-art-placeholder { height: 75px; background: rgba(0,0,0,0.4); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; color: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.05); }
+        
+        .card-item.common { border-color: #555566; }
+        .card-item.rare { border-color: #0077ff; box-shadow: inset 0 0 10px rgba(0,119,255,0.15); }
+        .card-item.epic { border-color: var(--neon-purple); box-shadow: inset 0 0 10px rgba(157,0,255,0.15); }
+        .card-item.legendary { border-color: #ffaa00; box-shadow: inset 0 0 12px rgba(255,170,0,0.2); }
+        
+        .card-rarity { font-size: 0.7rem; text-transform: uppercase; font-weight: bold; }
+        .common .card-rarity { color: #8a8a9e; } .rare .card-rarity { color: #0099ff; } .epic .card-rarity { color: #d946ef; } .legendary .card-rarity { color: #ffd700; }
+        .card-energy { background: #00ffcc; color: #000; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem; }
+        .card-title { font-size: 1.2rem; font-weight: bold; color: #fff; }
+        .card-stats { display: flex; justify-content: space-between; font-size: 0.9rem; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 4px; }
+        .card-desc { font-size: 0.8rem; color: #a0aec0; min-height: 40px; }
+        .card-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 6px; border-radius: 5px; cursor: pointer; }
+        .card-btn:hover { background: var(--neon-blue); color: black; }
+        .card-item.in-deck { border-style: double; box-shadow: 0 0 15px var(--neon-blue) !important; }
+        .deck-tag { position: absolute; top: -10px; right: 10px; background: var(--neon-blue); color: black; font-size: 0.65rem; padding: 2px 6px; font-weight: bold; border-radius: 3px; }
+
+        /* MAPA DE ARENAS */
+        .arenas-container { display: flex; flex-direction: column; gap: 15px; max-width: 700px; margin: 0 auto; }
+        .arena-card { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .arena-card.unlocked { border-left: 5px solid var(--neon-blue); }
+        .arena-card.locked { opacity: 0.4; }
+        .arena-btn { background: var(--neon-blue); border: none; padding: 10px 20px; border-radius: 5px; color: black; font-weight: bold; font-family: 'Orbitron', sans-serif; cursor: pointer; }
+
+        /* TIENDA */
+        .shop-zone { text-align: center; padding: 40px 20px; }
+        .pack-display { background: radial-gradient(circle, var(--neon-purple) 0%, transparent 70%); padding: 40px; display: inline-block; }
+        .pack-img { font-size: 5rem; color: white; text-shadow: 0 0 30px var(--neon-pink); animation: float 3s infinite alternate; }
+
+        /* GACHA REVEAL */
+        .gacha-reveal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 200; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 30px; }
+        .revealed-cards-container { display: flex; gap: 20px; }
+
+        /* INTERFAZ BATTLE TOWER DEFENSE */
+        .battle-ui { display: grid; grid-template-columns: 1fr 120px 1fr; background: rgba(9,9,22,0.9); border: 2px solid var(--neon-purple); border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; }
+        .hp-bar-wrapper { background: #222; border-radius: 10px; height: 16px; overflow: hidden; margin-top: 5px; }
+        .hp-bar-fill { height: 100%; width: 100%; transition: width 0.1s linear; }
+        #player-base-hp-fill { background: linear-gradient(to right, #00ffcc, #00f0ff); }
+        #enemy-hp-fill { background: linear-gradient(to right, #ff0055, #ff007f); }
+
+        /* CANVAS DE LA ARENA */
+        .battle-arena-canvas {
+            background: radial-gradient(circle at center, #15152d 0%, #060612 100%);
+            border: 2px solid rgba(255,255,255,0.1);
+            height: 320px;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 12px;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.9);
+        }
+
+        .defense-line {
+            position: absolute;
+            left: 50px; top: 0; width: 4px; height: 100%;
+            background: linear-gradient(to bottom, transparent, var(--neon-blue), transparent);
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        /* CAPA DEL CHRONO RUSH: Muestra el mazo congelado dentro del mapa */
+        .time-freeze-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 70, 150, 0.25);
+            backdrop-filter: blur(4px);
+            z-index: 10;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            border: 3px dashed var(--neon-blue);
+            padding: 15px 0;
+        }
+
+        .countdown-text { font-size: 3rem; font-family: 'Orbitron', sans-serif; color: white; text-shadow: 0 0 15px var(--neon-blue); }
+
+        /* DISPARO AUTOMÁTICO DE TEXTURAS EN ELEMENTOS DE ARENA */
+        .td-unit {
+            position: absolute;
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 5;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* TEXTURAS INDIVIDUALES BASADAS EN DISEÑO GRÁFICO (CSS AVANZADO) */
+        .tower-chrono-striker { background: radial-gradient(circle, #00f0ff, #004488); border: 2px solid #fff; box-shadow: 0 0 12px #00f0ff;}
+        .tower-nebula-shield { background: radial-gradient(circle, #aa00ff, #220055); border: 2px solid #d946ef; border-radius: 8px; box-shadow: 0 0 12px var(--neon-purple); }
+        .tower-quantum-assassin { background: radial-gradient(circle, #ff0055, #440011); border: 2px solid #ff0055; box-shadow: 0 0 15px #ff0055; clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%); }
+        .tower-comet-dasher { background: radial-gradient(circle, #ffaa00, #552200); border: 2px solid #ffaa00; box-shadow: 0 0 15px #ffaa00; transform: translate(-50%, -50%) rotate(45deg); border-radius: 4px; }
+        .tower-starburst-mage { background: linear-gradient(135deg, #00ffcc, #004433); border: 2px solid #00ffcc; box-shadow: 0 0 14px #00ffcc; border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+        .tower-gravity-singularity { background: black; border: 2px dashed #9d00ff; box-shadow: 0 0 20px #9d00ff; animation: spin 4s linear infinite; }
+        .tower-time-weaver { background: radial-gradient(circle, #10b981, #064e3b); border: 2px solid #10b981; box-shadow: 0 0 12px #10b981; clip-path: cubic-bezier(0.4, 0, 0.2, 1); }
+        .tower-galaxy-overlord { background: radial-gradient(circle, #ffd700, #b45309, #000); border: 3px double #ffd700; box-shadow: 0 0 25px #ffd700; }
+        .tower-eternal-phoenix { background: radial-gradient(circle, #ef4444, #7f1d1d); border: 2px solid #f97316; box-shadow: 0 0 22px #ef4444; }
+        .tower-apex-predator { background: linear-gradient(to bottom, #3b82f6, #1d4ed8); border: 2px solid #fff; box-shadow: 0 0 20px #3b82f6; }
+
+        @keyframes spin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* ENEMIGO TEXTURIZADO */
+        .enemy-marcher {
+            background: radial-gradient(circle, #ff007f 30%, #4a0020 90%);
+            border: 2px solid #ff007f;
+            box-shadow: 0 0 12px #ff007f;
+            border-radius: 50%;
+        }
+
+        /* EFECTO PROYECTIL COMETA Y AREA DE FUEGO PERSISTENTE */
+        .visual-comet {
+            position: absolute;
+            width: 14px; height: 14px;
+            background: radial-gradient(circle, #fff, #ff5500);
+            box-shadow: 0 0 20px 8px #ff2200;
+            border-radius: 50%;
+            z-index: 8;
+            transform: translate(-50%, -50%);
+            transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .fire-puddle {
+            position: absolute;
+            width: 70px; height: 35px;
+            background: radial-gradient(ellipse, rgba(255,68,0,0.6) 0%, rgba(255,0,0,0.2) 50%, transparent 70%);
+            border-radius: 50%;
+            z-index: 3;
+            transform: translate(-50%, -50%);
+            box-shadow: inset 0 0 10px rgba(255,100,0,0.5);
+            animation: pulseFire 0.4s ease infinite alternate;
+            pointer-events: none;
+        }
+        @keyframes pulseFire { from { opacity: 0.7; transform: translate(-50%, -50%) scale(0.9); } to { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } }
+
+        /* CONTROLES Y SELECCIÓN EN DETENCIÓN */
+        .battle-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .btn-freeze { background: linear-gradient(135deg, #0055ff 0%, #00f0ff 100%); border: none; padding: 14px 30px; border-radius: 5px; color: white; font-family: 'Orbitron', sans-serif; font-weight: bold; cursor: pointer; box-shadow: 0 0 15px #00f0ff; }
+        .btn-freeze:disabled { background: #1a1a2e; color: #444; box-shadow: none; cursor: not-allowed; }
+        
+        .tip-box { font-size: 1rem; color: #a0aec0; background: rgba(255,255,255,0.03); padding: 8px 15px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.08); }
+
+        /* AREA DE DESPLIEGUE EN CONGELACIÓN INTERNA */
+        .freeze-hand-container {
+            display: flex; gap: 10px; background: rgba(0,0,0,0.7);
+            padding: 10px; border-radius: 8px; border: 1px solid var(--neon-blue);
+            max-width: 90%; pointer-events: auto;
+        }
+
+        .battle-hand { display: flex; justify-content: center; gap: 10px; margin-top: 5px; opacity: 0.3; pointer-events: none;}
+        .battle-hand.interactive-mode { opacity: 1; pointer-events: auto; }
+
+        .hand-card { background: var(--bg-card); border: 1px solid #444; border-radius: 6px; padding: 10px; width: 125px; text-align: center; cursor: pointer; }
+        .hand-card.selected { border-color: var(--neon-blue); box-shadow: 0 0 12px var(--neon-blue); background: #0f172a; }
+        .hand-card .hc-name { font-size: 0.8rem; font-weight: bold; display: block; }
+
+        /* MODAL ADMIN */
+        .admin-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 300; display: none; align-items: center; justify-content: center; }
+        .admin-content { background: #0a0a14; border: 2px solid var(--neon-pink); border-radius: 10px; padding: 30px; max-width: 450px; text-align: center; box-shadow: 0 0 25px var(--neon-pink); }
+        .close-admin-btn { background: var(--neon-pink); border: none; padding: 8px 20px; border-radius: 5px; color: white; margin-top: 20px; cursor: pointer; font-family: 'Orbitron', sans-serif; }
     </style>
 </head>
 <body>
 
-<script>
-    // Ahora cada carta tiene su propia URL de imagen única
-    const MASTER_CARDS = [
-        { id: 1, name: "Chrono Striker", rarity: "common", cost: 0, damage: 16, hp: 100, imageSrc: "url_de_tu_imagen_1.jpg", desc: "Ataque Veloz" },
-        { id: 2, name: "Nebula Shield", rarity: "common", cost: 0, damage: 3, hp: 350, imageSrc: "url_de_tu_imagen_2.jpg", desc: "Barrera de Gas" },
-        { id: 3, name: "Quantum Assassin", rarity: "rare", cost: 0, damage: 40, hp: 90, imageSrc: "url_de_tu_imagen_3.jpg", desc: "Golpe Critico" },
-        { id: 4, name: "Comet Dasher", rarity: "rare", cost: 0, damage: 30, hp: 120, imageSrc: "url_de_tu_imagen_4.jpg", desc: "Impacto Cometario" },
-        { id: 5, name: "Starburst Mage", rarity: "epic", cost: 0, damage: 50, hp: 130, imageSrc: "url_de_tu_imagen_5.jpg", desc: "Lluvia de Estrellas" },
-        { id: 6, name: "Gravity Singularity", rarity: "epic", cost: 0, damage: 15, hp: 280, imageSrc: "url_de_tu_imagen_6.jpg", desc: "Atracción Pesada" },
-        { id: 7, name: "Time Weaver", rarity: "epic", cost: 0, damage: 20, hp: 160, imageSrc: "url_de_tu_imagen_7.jpg", desc: "Bucle Temporal" },
-        { id: 8, name: "Galaxy Overlord", rarity: "legendary", cost: 0, damage: 90, hp: 210, imageSrc: "url_de_tu_imagen_8.jpg", desc: "Juicio Galáctico" },
-        { id: 9, name: "Eternal Phoenix", rarity: "legendary", cost: 0, damage: 70, hp: 190, imageSrc: "url_de_tu_imagen_9.jpg", desc: "Supernova" },
-        { id: 10, name: "Apex Predator", rarity: "legendary", cost: 0, damage: 85, hp: 240, imageSrc: "url_de_tu_imagen_10.jpg", desc: "Cacería Cósmica" }
-    ];
+    <div id="loading-screen">
+        <h2 class="font-orbitron" style="font-size:2rem; color:white; letter-spacing:4px;">VERSO GAMES</h2>
+        <p style="color:var(--neon-blue); font-size:0.9rem; letter-spacing:2px;">CARGANDO CHRONO RUSH SYNC...</p>
+        <div class="loader-bar">
+            <div class="loader-fill"></div>
+        </div>
+    </div>
 
-    // Función para renderizar carta con imagen
-    function renderCollection() {
-        let container = document.getElementById('collection-container');
-        container.innerHTML = "";
-        MASTER_CARDS.forEach(card => {
-            container.innerHTML += `
-                <div class="card-item ${card.rarity}">
-                    <div class="card-img-art" style="background-image: url('${card.imageSrc}')"></div>
-                    <div class="card-title">${card.name}</div>
-                    <p>${card.desc}</p>
+    <canvas id="bg-canvas"></canvas>
+
+    <header>
+        <div class="brand">
+            <h1 class="gold-active">CHRONO RUSH<span class="verso-tag">VERSO GAMES</span></h1>
+        </div>
+        <div class="stats-container">
+            <div class="stat-box"><i class="fas fa-coins" style="color: #f1c40f;"></i> <span id="player-coins">1000</span></div>
+            <div class="stat-box"><i class="fas fa-gem" style="color: var(--neon-blue);"></i> <span id="player-gems">50</span></div>
+        </div>
+    </header>
+
+    <main>
+        <section id="lobby-view" class="view-section active">
+            <div class="lobby-grid">
+                <div class="title-container">
+                    <h2 class="title-large gold-active">GALAXY DEFENSE</h2>
+                    <p style="color:#8a8a9e; margin-top: 5px;">Alpha System v2.0</p>
                 </div>
-            `;
-        });
-    }
+                <button class="btn-huge" onclick="switchView('arenas')">INGRESAR AL MAPA</button>
+                
+                <div class="code-input-zone">
+                    <input type="text" id="coupon-code" placeholder="CÓDIGO DE ACCESO">
+                    <button onclick="applyCompanyCode()">INJECT</button>
+                </div>
+            </div>
+        </section>
 
-    // Al colocar en el campo de batalla:
-    function placeTower(x, y, card) {
-        let stage = document.getElementById('arena-stage');
-        let tower = document.createElement('div');
-        tower.className = "tower-unit";
-        tower.style.backgroundImage = `url('${card.imageSrc}')`;
-        tower.style.left = x + "px";
-        tower.style.top = y + "px";
-        stage.appendChild(tower);
-    }
-</script>
+        <section id="deck-view" class="view-section">
+            <div class="deck-info">
+                <h2 class="gold-active" style="margin-bottom: 5px;">COMPAÑÍA DE CARTAS TÁCTICAS</h2>
+                <p>Mazo de Defensas Activo: <span id="deck-counter" style="color:var(--neon-blue); font-weight:bold;">0</span> / 4 Equipadas</p>
+            </div>
+            <div class="cards-grid" id="collection-container"></div>
+        </section>
+
+        <section id="arenas-view" class="view-section">
+            <h2 class="gold-active" style="text-align:center; margin-bottom: 20px;">SECTORES DE NAVEGACIÓN ESTELAR</h2>
+            <div class="arenas-container" id="arenas-map-container"></div>
+        </section>
+
+        <section id="shop-view" class="view-section">
+            <div class="shop-zone">
+                <h2 class="gold-active">SUMINISTROS CUÁNTICOS</h2>
+                <p style="color: #a0aec0; margin-bottom: 30px;">Consigue nuevas unidades estelares</p>
+                <div class="pack-display">
+                    <div class="pack-img"><i class="fas fa-box-tissue"></i></div>
+                    <h3>Sobre de Expansión</h3>
+                    <p style="margin: 10px 0; color:#f1c40f;"><i class="fas fa-coins"></i> 250 Monedas</p>
+                    <button class="btn-huge" style="font-size:1.2rem; padding: 12px 35px;" onclick="buyQuantumPack()">COMPRAR SOBRE</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="battle-view" class="view-section">
+            <div class="battle-ui">
+                <div class="side-info">
+                    <div class="font-orbitron" style="color:var(--neon-blue);">TU TORRE</div>
+                    <div class="hp-bar-wrapper"><div id="player-base-hp-fill" class="hp-bar-fill"></div></div>
+                    <div style="font-size:0.85rem;" id="player-hp-text">1000 / 1000 HP</div>
+                </div>
+                <div style="font-size:1.1rem; font-weight:bold; color:var(--neon-pink); align-self:center;">DEFENSA</div>
+                <div class="side-info">
+                    <div class="font-orbitron" style="color:var(--neon-pink);">INVASORES</div>
+                    <div class="hp-bar-wrapper"><div id="enemy-hp-fill" class="hp-bar-fill"></div></div>
+                    <div style="font-size:0.85rem;" id="enemy-hp-text">100 RESTANTES</div>
+                </div>
+            </div>
+
+            <div class="battle-arena-canvas" id="arena-stage" onclick="handleArenaGridClick(event)">
+                <div class="defense-line"></div>
+                
+                <div class="time-freeze-overlay" id="freeze-ui">
+                    <div class="countdown-text" id="freeze-countdown">5</div>
+                    <div style="color:#fff; font-weight:bold; text-shadow:0 0 5px #000;">SELECCIONA TU CARTA ABAJO Y HAZ CLICK EN LA ARENA</div>
+                    
+                    <div class="freeze-hand-container" id="freeze-internal-hand" onclick="event.stopPropagation();"></div>
+                </div>
+            </div>
+
+            <div class="battle-controls">
+                <button class="btn-freeze" id="freeze-action-btn" onclick="activateChronoRush()"><i class="fas fa-hourglass-start"></i> CONGELAR TIEMPO</button>
+                <div class="tip-box" id="td-tip-message">Presiona Congelar Tiempo para desplegar tus cartas en el escenario táctico.</div>
+            </div>
+
+            <div class="battle-hand" id="combat-player-hand"></div>
+        </section>
+    </main>
+
+    <div class="gacha-reveal-overlay" id="gacha-layer">
+        <h2 class="font-orbitron" style="color:var(--neon-blue);">UNIDADES TRANSFERIDAS</h2>
+        <div class="revealed-cards-container" id="gacha-cards-box"></div>
+        <button class="card-btn" style="padding:10px 30px; font-weight:bold;" onclick="closeGachaScreen()">CONFIRMAR</button>
+    </div>
+
+    <div class="admin-modal" id="admin-gate-modal">
+        <div class="admin-content">
+            <h2 class="font-orbitron" style="color:var(--neon-pink); margin-bottom: 15px;"><i class="fas fa-shield-alt"></i> ALERTA CORE</h2>
+            <p style="font-size: 1.1rem;">¡Bienvenido, Administrador Supremo de VERSO GAMES! Acceso al núcleo concedido.</p>
+            <button class="close-admin-btn" onclick="closeAdminModal()">CERRAR TERMINAL</button>
+        </div>
+    </div>
+
+    <nav>
+        <button class="nav-btn active" id="nav-lobby" onclick="switchView('lobby')"><i class="fas fa-space-shuttle"></i>Lobby</button>
+        <button class="nav-btn" id="nav-deck" onclick="switchView('deck')"><i class="fas fa-id-card"></i>Mazo</button>
+        <button class="nav-btn" id="nav-arenas" onclick="switchView('arenas')"><i class="fas fa-map-marked-alt"></i>Arenas</button>
+        <button class="nav-btn" id="nav-shop" onclick="switchView('shop')"><i class="fas fa-shopping-cart"></i>Tienda</button>
+    </nav>
+
+    <script>
+        // ESPECIFICACIONES CON ICONOS INTEGRADOS PARA CADA IDENTIDAD VISUAL
+        const MASTER_CARDS = [
+            { id: 1, name: "Chrono Striker", rarity: "common", cost: 0, damage: 16, hp: 100, class: "chrono-striker", icon: "fa-bolt", desc: "Torre de pulsos veloces." },
+            { id: 2, name: "Nebula Shield", rarity: "common", cost: 0, damage: 3, hp: 350, class: "nebula-shield", icon: "fa-shield-halved", desc: "Gran barrera de contención cuántica." },
+            { id: 3, name: "Quantum Assassin", rarity: "rare", cost: 0, damage: 40, hp: 90, class: "quantum-assassin", icon: "fa-crosshairs", desc: "Centinela de daño concentrado y crítico." },
+            { id: 4, name: "Comet Dasher", rarity: "rare", cost: 0, damage: 30, hp: 120, class: "comet-dasher", icon: "fa-meteor", desc: "¡Impacto en área y deja fuego ardiente destructivo!" },
+            { id: 5, name: "Starburst Mage", rarity: "epic", cost: 0, damage: 50, hp: 130, class: "starburst-mage", icon: "fa-wand-magic-sparkles", desc: "Emisor de plasma pesado antianclajes." },
+            { id: 6, name: "Gravity Singularity", rarity: "epic", cost: 0, damage: 15, hp: 280, class: "gravity-singularity", icon: "fa-circle-dot", desc: "Vórtice atractor equilibrado de autodefensa." },
+            { id: 7, name: "Time Weaver", rarity: "epic", cost: 0, damage: 20, hp: 160, class: "time-weaver", icon: "fa-clock", desc: "Distorsiona y ralentiza el flujo invasor." },
+            { id: 8, name: "Galaxy Overlord", rarity: "legendary", cost: 0, damage: 90, hp: 210, class: "galaxy-overlord", icon: "fa-crown", desc: "Destructor estelar supremo de área." },
+            { id: 9, name: "Eternal Phoenix", rarity: "legendary", cost: 0, damage: 70, hp: 190, class: "eternal-phoenix", icon: "fa-fire-alt", desc: "Tormenta de fuego continuo celestial." },
+            { id: 10, name: "Apex Predator", rarity: "legendary", cost: 0, damage: 85, hp: 240, class: "apex-predator", icon: "fa-dragon", desc: "Balística pesada de vanguardia." }
+        ];
+
+        const MASTER_ARENAS = [];
+        const arenaNames = ["Órbita Terrestre", "Cinturón Asteroides", "Estación Kepler", "Anillos de Saturno", "Nebula de Orión", "Clúster Caelum", "Marte Exterior", "Mar de Metano", "Agujero de Gusano", "Sector Alpha", "Frontera Eventos", "Base Omega", "Vórtice Oscuro", "Galaxia Enana", "Titán Prime", "Supernova", "Espacio Profundo", "Constelación Cygnus", "Santuario Estelar", "Núcleo del Tiempo"];
+        
+        for(let i=1; i<=20; i++) {
+            MASTER_ARENAS.push({
+                id: i, name: `Arena ${i}: ${arenaNames[i-1]}`, enemyCount: 5 + (i * 3), enemyHP: 40 + (i * 25), enemySpeed: 1.1 + (i * 0.12), rewardCoins: 100 + (i * 50)
+            });
+        }
+
+        let gameState = { coins: 1000, gems: 50, unlockedArenas: 1, ownedCards: [1, 2, 3, 4], equippedMazo: [1, 2, 3, 4], versoCodeActive: false };
+        let currentBattle = { active: false, arenaId: null, playerBaseHP: 1000, enemiesRemaining: 0, totalEnemiesInWave: 0, timeFrozen: false, freezeTimeLeft: 5, selectedHandCard: null, deployedTowers: [], activeEnemies: [], activeFirePuddles: [] };
+
+        let tdEngineInterval = null;
+        let enemySpawnInterval = null;
+        let enemyIdCounter = 0;
+
+        window.onload = function() {
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.opacity = '0';
+                setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 400);
+            }, 2200);
+            loadSavedData();
+            initBackgroundParticles();
+            renderCollection();
+            renderArenasMap();
+            applyVisualVersoMode();
+        };
+
+        function saveGame() {
+            localStorage.setItem('verso_chronorush_save', JSON.stringify(gameState));
+            document.getElementById('player-coins').innerText = gameState.coins;
+            document.getElementById('player-gems').innerText = gameState.gems;
+        }
+
+        function loadSavedData() {
+            let saved = localStorage.getItem('verso_chronorush_save');
+            if(saved) {
+                try { gameState = JSON.parse(saved); if (!gameState.unlockedArenas) gameState.unlockedArenas = 1; } catch(e){}
+            }
+            document.getElementById('player-coins').innerText = gameState.coins;
+            document.getElementById('player-gems').innerText = gameState.gems;
+        }
+
+        function switchView(targetView) {
+            if(currentBattle.active && targetView !== 'battle') {
+                if(!confirm("¿Retirarse? El sector quedará desprotegido.")) return;
+                endBattleSystem(false);
+            }
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`${targetView}-view`).classList.add('active');
+            if(document.getElementById(`nav-${targetView}`)) document.getElementById(`nav-${targetView}`).classList.add('active');
+        }
+
+        function applyCompanyCode() {
+            let val = document.getElementById('coupon-code').value.trim();
+            if(val === "VERSO") { gameState.versoCodeActive = true; applyVisualVersoMode(); saveGame(); alert("¡Código VERSO inyectado!"); }
+            else if(val === "MEGA ADMIN :)") { document.getElementById('admin-gate-modal').style.display = 'flex'; }
+            else { alert("Código inválido."); }
+            document.getElementById('coupon-code').value = "";
+        }
+        function applyVisualVersoMode() { if(gameState.versoCodeActive) document.body.classList.add('verso-active'); }
+        function closeAdminModal() { document.getElementById('admin-gate-modal').style.display = 'none'; }
+
+        function renderCollection() {
+            let container = document.getElementById('collection-container'); container.innerHTML = "";
+            MASTER_CARDS.forEach(card => {
+                let isOwned = gameState.ownedCards.includes(card.id);
+                let isInMazo = gameState.equippedMazo.includes(card.id);
+                let cardDiv = document.createElement('div');
+                cardDiv.className = `card-item ${card.rarity} ${isInMazo ? 'in-deck' : ''}`;
+                if(!isOwned) cardDiv.style.opacity = "0.3";
+
+                cardDiv.innerHTML = `
+                    ${isInMazo ? '<div class="deck-tag">EN MAZO</div>' : ''}
+                    <div class="card-header-info">
+                        <span class="card-rarity">${card.rarity}</span>
+                        <div class="card-energy">${card.cost}</div>
+                    </div>
+                    <div class="card-art-placeholder"><i class="fas ${card.icon}"></i></div>
+                    <div class="card-title card-title-gold">${card.name}</div>
+                    <div class="card-stats">
+                        <span><i class="fas fa-bolt" style="color:#ffaa00"></i> ATK: ${card.damage}</span>
+                        <span><i class="fas fa-heart" style="color:#ff4560"></i> HP: ${card.hp}</span>
+                    </div>
+                    <div class="card-desc">${card.desc}</div>
+                    ${isOwned ? `<button class="card-btn" onclick="toggleCardInMazo(${card.id})">${isInMazo ? 'Quitar' : 'Equipar'}</button>` : ''}
+                `;
+                container.appendChild(cardDiv);
+            });
+            document.getElementById('deck-counter').innerText = gameState.equippedMazo.length;
+        }
+
+        function toggleCardInMazo(id) {
+            let index = gameState.equippedMazo.indexOf(id);
+            if(index > -1) gameState.equippedMazo.splice(index, 1);
+            else { if(gameState.equippedMazo.length >= 4) return alert("Máximo 4 cartas."); gameState.equippedMazo.push(id); }
+            saveGame(); renderCollection();
+        }
+
+        function renderArenasMap() {
+            let container = document.getElementById('arenas-map-container'); container.innerHTML = "";
+            MASTER_ARENAS.forEach(arena => {
+                let isUnlocked = arena.id <= gameState.unlockedArenas;
+                let arenaDiv = document.createElement('div');
+                arenaDiv.className = `arena-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+                arenaDiv.innerHTML = `
+                    <div><h3 class="card-title-gold">${arena.name}</h3><div style="color:#8a8a9e;">Oleada: ${arena.enemyCount} Invasores | +${arena.rewardCoins} Monedas</div></div>
+                    <button class="arena-btn" ${isUnlocked ? '' : 'disabled'} onclick="startCombatSystem(${arena.id})">DEFENDER</button>
+                `;
+                container.appendChild(arenaDiv);
+            });
+        }
+
+        function buyQuantumPack() {
+            if(gameState.coins < 250) return alert("Monedas insuficientes.");
+            gameState.coins -= 250; saveGame();
+            let ob = [rollRandomCard(), rollRandomCard(), rollRandomCard()];
+            ob.forEach(c => { if(!gameState.ownedCards.includes(c.id)) gameState.ownedCards.push(c.id); });
+            saveGame(); renderCollection();
+
+            let box = document.getElementById('gacha-cards-box'); box.innerHTML = "";
+            ob.forEach(c => { box.innerHTML += `<div class="card-item ${c.rarity}" style="width:150px;"><div class="card-art-placeholder" style="height:50px; font-size:1.5rem;"><i class="fas ${c.icon}"></i></div><div class="card-title card-title-gold" style="font-size:0.9rem; text-align:center;">${c.name}</div></div>`; });
+            document.getElementById('gacha-layer').style.display = "flex";
+        }
+        function rollRandomCard() {
+            let r = Math.random() * 100;
+            let rarity = r < 5 ? "legendary" : r < 20 ? "epic" : r < 50 ? "rare" : "common";
+            let f = MASTER_CARDS.filter(c => c.rarity === rarity); return f[Math.floor(Math.random() * f.length)];
+        }
+        function closeGachaScreen() { document.getElementById('gacha-layer').style.display = "none"; }
+
+        // ENTRAR A COMBATE TOWER DEFENSE
+        function startCombatSystem(arenaId) {
+            let arena = MASTER_ARENAS.find(a => a.id === arenaId);
+            currentBattle = {
+                active: true, arenaId: arenaId, playerBaseHP: 1000, enemiesRemaining: arena.enemyCount, totalEnemiesInWave: arena.enemyCount,
+                timeFrozen: false, freezeTimeLeft: 5, selectedHandCard: null, deployedTowers: [], activeEnemies: [], activeFirePuddles: []
+            };
+
+            clearStageElements();
+            updateBattleUI();
+            renderBaseHand(false); 
+            switchView('battle');
+
+            clearInterval(tdEngineInterval); clearInterval(enemySpawnInterval);
+            tdEngineInterval = setInterval(updateTowerDefenseEngine, 33);
+
+            let spawned = 0;
+            enemySpawnInterval = setInterval(() => {
+                if(!currentBattle.timeFrozen && currentBattle.active && spawned < currentBattle.totalEnemiesInWave) {
+                    spawnEnemyMarcher(arena.enemyHP, arena.enemySpeed); spawned++;
+                }
+            }, 1800);
+        }
+
+        function clearStageElements() {
+            document.getElementById('arena-stage').querySelectorAll('.td-unit, .visual-comet, .fire-puddle').forEach(el => el.remove());
+        }
+
+        // Renderiza el mazo base estático abajo (Bloqueado hasta activar congelación)
+        function renderBaseHand(interactive, targetContainerId = 'combat-player-hand') {
+            let container = document.getElementById(targetContainerId); container.innerHTML = "";
+            gameState.equippedMazo.forEach(id => {
+                let card = MASTER_CARDS.find(c => c.id === id);
+                let hCard = document.createElement('div');
+                hCard.className = `hand-card ${currentBattle.selectedHandCard && currentBattle.selectedHandCard.id === card.id ? 'selected' : ''}`;
+                hCard.innerHTML = `<span class="hc-name card-title-gold"><i class="fas ${card.icon}"></i> ${card.name}</span>`;
+                if(interactive) {
+                    hCard.onclick = (e) => { e.stopPropagation(); selectCardInFreeze(card.id); };
+                }
+                container.appendChild(hCard);
+            });
+        }
+
+        function selectCardInFreeze(id) {
+            currentBattle.selectedHandCard = MASTER_CARDS.find(c => c.id === id);
+            renderBaseHand(true, 'freeze-internal-hand'); // Re-renderizar con feedback visual de selección
+            document.getElementById('td-tip-message').innerText = `Elegido: ${currentBattle.selectedHandCard.name}. Haz clic en el terreno para colocarlo.`;
+        }
+
+        // 1. PRIMERO CONGELAS EL TIEMPO
+        function activateChronoRush() {
+            if(!currentBattle.active || currentBattle.timeFrozen) return;
+
+            currentBattle.timeFrozen = true;
+            currentBattle.freezeTimeLeft = 6;
+            currentBattle.selectedHandCard = null; // Reiniciar selección para forzar elegir después de congelar
+
+            let overlay = document.getElementById('freeze-ui');
+            let countdown = document.getElementById('freeze-countdown');
+            let btn = document.getElementById('freeze-action-btn');
+
+            overlay.style.display = 'flex';
+            countdown.innerText = currentBattle.freezeTimeLeft;
+            btn.disabled = true;
+            
+            document.getElementById('td-tip-message').innerText = "Tiempo detenido. Elige una carta dentro de la zona y colócala.";
+            renderBaseHand(true, 'freeze-internal-hand'); // Cargar mazo interactivo adentro
+
+            let timer = setInterval(() => {
+                currentBattle.freezeTimeLeft--;
+                if(currentBattle.freezeTimeLeft <= 0 || !currentBattle.timeFrozen) {
+                    clearInterval(timer);
+                    overlay.style.display = 'none';
+                    btn.disabled = false;
+                    currentBattle.timeFrozen = false;
+                    document.getElementById('td-tip-message').innerText = "Tiempo reanudado.";
+                } else {
+                    countdown.innerText = currentBattle.freezeTimeLeft;
+                }
+            }, 1000);
+        }
+
+        // 2. DESPUÉS COLOCAS LA CARTA AL HACER CLICK EN EL MAPA
+        function handleArenaGridClick(e) {
+            if(!currentBattle.timeFrozen) return; 
+            if(!currentBattle.selectedHandCard) {
+                alert("Primero debes seleccionar una carta del menú de congelación."); return;
+            }
+
+            let rect = document.getElementById('arena-stage').getBoundingClientRect();
+            let clickX = e.clientX - rect.left;
+            let clickY = e.clientY - rect.top;
+
+            if(clickX < 70) return alert("Demasiado cerca de la compuerta de la torre.");
+
+            let towerObj = {
+                id: Date.now(), x: clickX, y: clickY, cardData: currentBattle.selectedHandCard, lastShot: 0
+            };
+
+            // LANZAMIENTO ESPECIAL DE COMETA (Mecánica única solicitada)
+            if(towerObj.cardData.class === "comet-dasher") {
+                executeCometLaunch(clickX, clickY, towerObj.cardData.damage);
+            } else {
+                // Registro normal para estructuras estáticas permanentes
+                currentBattle.deployedTowers.push(towerObj);
+                let stage = document.getElementById('arena-stage');
+                let el = document.createElement('div');
+                el.className = `td-unit tower-${towerObj.cardData.class}`;
+                el.id = `tower-${towerObj.id}`;
+                el.style.left = `${clickX}px`; el.style.top = `${clickY}px`;
+                el.innerHTML = `<i class="fas ${towerObj.cardData.icon}" style="color:rgba(255,255,255,0.8); font-size:1rem;"></i>`;
+                stage.appendChild(el);
+            }
+
+            // Salir del modo congelación inmediatamente para agilizar flujo
+            currentBattle.selectedHandCard = null;
+            currentBattle.timeFrozen = false;
+            document.getElementById('freeze-ui').style.display = 'none';
+            document.getElementById('freeze-action-btn').disabled = false;
+            document.getElementById('td-tip-message').innerText = "Defensa desplegada. Tiempo reanudado.";
+        }
+
+        // LANZAMIENTO DINÁMICO DE COMETA CON ÁREA DE FUEGO POSTERIOR
+        function executeCometLaunch(tx, ty, dmg) {
+            let stage = document.getElementById('arena-stage');
+            
+            // Crear el proyectil físico del cometa viniendo desde el espacio superior izquierdo
+            let cometEl = document.createElement('div');
+            cometEl.className = "visual-comet";
+            cometEl.style.left = `${tx - 120}px`;
+            cometEl.style.top = `-20px`;
+            stage.appendChild(cometEl);
+
+            // Transición del impacto
+            setTimeout(() => {
+                cometEl.style.left = `${tx}px`;
+                cometEl.style.top = `${ty}px`;
+            }, 50);
+
+            // Al colisionar: Daño explosivo inicial y crea charco ardiente
+            setTimeout(() => {
+                cometEl.remove();
+
+                // Daño en área instantáneo a invasores en un rango de 60px
+                currentBattle.activeEnemies.forEach(en => {
+                    if(Math.hypot(en.x - tx, en.y - ty) < 65) { en.hp -= (dmg * 1.5); }
+                });
+
+                // Crear elemento visual del área de fuego real en lugar de un cubo
+                let puddleEl = document.createElement('div');
+                puddleEl.className = "fire-puddle";
+                puddleEl.style.left = `${tx}px`;
+                puddleEl.style.top = `${ty}px`;
+                stage.appendChild(puddleEl);
+
+                let puddleObj = { x: tx, y: ty, damagePerTick: 4, durationTicks: 150, element: puddleEl }; // Dura 5 segundos aprox
+                currentBattle.activeFirePuddles.push(puddleObj);
+
+                checkDeadEnemies();
+            }, 300);
+        }
+
+        function spawnEnemyMarcher(hp, speed) {
+            enemyIdCounter++;
+            let enemyObj = {
+                id: enemyIdCounter, x: window.innerWidth > 800 ? 760 : 540, y: 40 + (Math.random() * 230), hp: hp, maxHp: hp, speed: speed
+            };
+            currentBattle.activeEnemies.push(enemyObj);
+
+            let stage = document.getElementById('arena-stage');
+            let el = document.createElement('div');
+            el.className = "td-unit enemy-marcher"; el.id = `enemy-${enemyObj.id}`;
+            el.style.left = `${enemyObj.x}px`; el.style.top = `${enemyObj.y}px`;
+            stage.appendChild(el);
+        }
+
+        // MOTOR FÍSICO DEL TOWER DEFENSE (30 FPS)
+        function updateTowerDefenseEngine() {
+            if(!currentBattle.active || currentBattle.timeFrozen) return;
+
+            // 1. Desplazamiento de los Invasores
+            currentBattle.activeEnemies.forEach((enemy, index) => {
+                enemy.x -= enemy.speed;
+                let el = document.getElementById(`enemy-${enemy.id}`);
+                if(el) el.style.left = `${enemy.x}px`;
+
+                // Verificar daño por zonas/charcos de fuego activos en el mapa
+                currentBattle.activeFirePuddles.forEach(puddle => {
+                    let distance = Math.hypot(enemy.x - puddle.x, enemy.y - puddle.y);
+                    if(distance < 45) { enemy.hp -= puddle.damagePerTick; } // Daño continuo por quemadura
+                });
+
+                if(enemy.x <= 55) {
+                    currentBattle.playerBaseHP -= 25;
+                    if(el) el.remove();
+                    currentBattle.activeEnemies.splice(index, 1);
+                    currentBattle.enemiesRemaining--;
+                    updateBattleUI(); checkBattleEndConditions();
+                }
+            });
+
+            checkDeadEnemies();
+
+            // 2. Gestión de charcos de fuego del Cometa (Disminuir durabilidad)
+            currentBattle.activeFirePuddles.forEach((puddle, pIdx) => {
+                puddle.durationTicks--;
+                if(puddle.durationTicks <= 0) {
+                    if(puddle.element) puddle.element.remove();
+                    currentBattle.activeFirePuddles.splice(pIdx, 1);
+                }
+            });
+
+            // 3. Torres aliadas fijas disparando de forma automática
+            let ahora = Date.now();
+            currentBattle.deployedTowers.forEach(tower => {
+                if(ahora - tower.lastShot > 1300) {
+                    let objetivo = null; let menorDistancia = 160;
+
+                    currentBattle.activeEnemies.forEach(enemy => {
+                        let dist = Math.hypot(enemy.x - tower.x, enemy.y - tower.y);
+                        if(dist < menorDistancia) { menorDistancia = dist; objetivo = enemy; }
+                    });
+
+                    if(objetivo) {
+                        objetivo.hp -= tower.cardData.damage; tower.lastShot = ahora;
+                        let tEl = document.getElementById(`tower-${tower.id}`);
+                        if(tEl) { tEl.style.filter = "brightness(2)"; setTimeout(() => tEl.style.filter = "none", 120); }
+                    }
+                }
+            });
+        }
+
+        function checkDeadEnemies() {
+            currentBattle.activeEnemies.forEach((enemy, index) => {
+                if(enemy.hp <= 0) {
+                    let eEl = document.getElementById(`enemy-${enemy.id}`); if(eEl) eEl.remove();
+                    currentBattle.activeEnemies.splice(index, 1);
+                    currentBattle.enemiesRemaining--;
+                    updateBattleUI(); checkBattleEndConditions();
+                }
+            });
+        }
+
+        function updateBattleUI() {
+            let pPct = (currentBattle.playerBaseHP / 1000) * 100;
+            document.getElementById('player-base-hp-fill').style.width = `${Math.max(0, pPct)}%`;
+            document.getElementById('player-hp-text').innerText = `${Math.max(0, currentBattle.playerBaseHP)} / 1000 HP`;
+
+            let rem = Math.max(0, currentBattle.enemiesRemaining);
+            let ePct = (rem / currentBattle.totalEnemiesInWave) * 100;
+            document.getElementById('enemy-hp-fill').style.width = `${ePct}%`;
+            document.getElementById('enemy-hp-text').innerText = `${rem} RESTANTES`;
+            renderBaseHand(false);
+        }
+
+        function checkBattleEndConditions() {
+            if(currentBattle.enemiesRemaining <= 0 && currentBattle.playerBaseHP > 0) endBattleSystem(true);
+            else if(currentBattle.playerBaseHP <= 0) endBattleSystem(false);
+        }
+
+        function endBattleSystem(won) {
+            currentBattle.active = false;
+            clearInterval(tdEngineInterval); clearInterval(enemySpawnInterval);
+            if(won) {
+                let arena = MASTER_ARENAS.find(a => a.id === currentBattle.arenaId); gameState.coins += arena.rewardCoins;
+                if(currentBattle.arenaId === gameState.unlockedArenas && gameState.unlockedArenas < 20) gameState.unlockedArenas++;
+                alert(`¡Sector asegurado! Ganaste +${arena.rewardCoins} monedas.`);
+            } else { alert("Defensa superada. La base ha colapsado."); }
+            saveGame(); renderArenasMap(); switchView('arenas');
+        }
+
+        function initBackgroundParticles() {
+            let canvas = document.getElementById('bg-canvas'); let ctx = canvas.getContext('2d');
+            function r() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            window.onresize = r; r();
+            let stars = []; for(let i=0; i<45; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, speed: Math.random()*0.15+0.05 });
+            function anim() {
+                ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle = "rgba(255,255,255,0.4)";
+                stars.forEach(s => { ctx.fillRect(s.x, s.y, 2, 2); s.y += s.speed; if(s.y > canvas.height) { s.y = 0; s.x = Math.random()*canvas.width; } });
+                requestAnimationFrame(anim);
+            }
+            anim();
+        }
+    </script>
 </body>
 </html>
